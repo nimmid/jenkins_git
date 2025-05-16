@@ -1,5 +1,5 @@
 environment {
-    EMAIL_RECIPIENT = 'nimmid6@gmail.com'
+    EMAIL_RECIPIENT = 'ndubey202000@gmail.com'
     LOG_FILE = 'console_output.log'
 }
 
@@ -8,7 +8,7 @@ stages {
         steps {
             script {
                 echo 'Running test stage...'
-                sh 'echo "Simulating test run..." > test-output.txt'
+                bat 'echo Simulating test run > test-output.txt'
             }
         }
     }
@@ -17,7 +17,7 @@ stages {
         steps {
             script {
                 echo 'Running security scan stage...'
-                sh 'echo "Simulating security scan..." > security-output.txt'
+                bat 'echo Simulating security scan > security-output.txt'
             }
         }
     }
@@ -26,8 +26,8 @@ stages {
 post {
     always {
         script {
-            // Capture console output to file
-            def logText = currentBuild.rawBuild.getLog(10000).join("\n")
+            // Capture the console log into a file (max 10,000 lines)
+            def logText = currentBuild.rawBuild.getLog(10000).join("\r\n")
             writeFile file: "${LOG_FILE}", text: logText
         }
 
