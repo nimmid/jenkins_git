@@ -1,37 +1,50 @@
-environment {
-    EMAIL_RECIPIENT = 'ndubey202000@gmail.com'
-    LOG_FILE = 'console_output.log'
-}
+pipeline {
+    agent any
 
-stages {
-    stage('Test') {
-        steps {
-            script {
-                echo 'Running test stage...'
-                bat 'echo Simulating test run > test-output.txt'
+    environment {
+        EMAIL_RECIPIENT = 'nimmid6@gmail..com'
+    }
+
+    stages {
+        stage('Test') {
+            steps {
+                echo "Running tests..."
+                bat 'run-tests.bat'
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                echo "Running security scan..."
+                bat 'run-security-scan.bat'
             }
         }
     }
 
-    stage('Security Scan') {
-        steps {
+    post {
+        always {
+            // Save full console log to file (Windows compatible)
             script {
-                echo 'Running security scan stage...'
-                bat 'echo Simulating security scan > security-output.txt'
+                def consoleOutput = currentBuild.rawBuild.getLog(10000).join("\r\n")
+                writeFile file: 'console.log', text: consoleOutput
             }
+
+            // Send email with console log attached
+            emailext (
+                subject: "Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: """
+                Hello Team,
+
+                The Jenkins build has completed with status: ${currentBuild.currentResult}.
+
+                Please find the attached console log for details.
+
+                Regards,
+                Jenkins
+                """,
+                to: "${EMAIL_RECIPIENT}",
+                attachmentsPattern: 'console.log'
+            )
         }
     }
 }
-
-post {
-    always {
-        script {
-            // Capture the console log into a file (max 10,000 lines)
-            def logText = currentBuild.rawBuild.getLog(10000).join("\r\n")
-            writeFile file: "${LOG_FILE}", text: logText
-        }
-
-        emailext(
-            to: "${EMAIL_RECIPIENT}",
-            subject: "Jenkins Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
-            body: """Hello,
