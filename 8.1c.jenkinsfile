@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                echo "Build Stage"
+                echo "Maven"
                 dir("${env.DIRECTORY_PATH}") {
                     bat 'npm install'
                     bat 'npm run build'
@@ -21,7 +21,7 @@ pipeline {
 
         stage('Unit and Integration Tests') {
             steps {
-                echo "Testing Stage"
+                echo "Selenium"
                 dir("${env.DIRECTORY_PATH}") {
                     bat 'npm run test'
                 }
@@ -30,7 +30,7 @@ pipeline {
 
         stage('Code Analysis') {
             steps {
-                echo "Code Analysis Stage"
+                echo "SonarQube"
                 dir("${env.DIRECTORY_PATH}") {
                     bat 'sonar-scanner -Dsonar.projectKey=NextApp -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.login=your_sonar_token'
                 }
@@ -39,7 +39,7 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                echo "Security Scan Stage"
+                echo "Qualys"
                 dir("${env.DIRECTORY_PATH}") {
                     bat 'dependency-check.bat --project NextApp --scan . --format ALL'
                 }
@@ -48,7 +48,7 @@ pipeline {
 
         stage('Deploy to Staging') {
             steps {
-                echo "Deploying to staging environment..."
+                echo "Jenkins"
                 bat 'echo Deploying to staging server...'
                 // Add your actual deployment commands here
             }
@@ -79,7 +79,7 @@ pipeline {
             emailext(
                 body: 'Pipeline succeeded. All stages completed.',
                 subject: 'Pipeline Status: SUCCESS',
-                to: 'devops-team@example.com',
+                to: 'nimmid6@gmail.com',
                 attachmentsPattern: '**/*.log'
             )
         }
@@ -87,7 +87,7 @@ pipeline {
             emailext(
                 body: 'Pipeline failed. Please check the logs for details.',
                 subject: 'Pipeline Status: FAILURE',
-                to: 'devops-team@example.com',
+                to: 'nimmid6@gmail.com',
                 attachmentsPattern: '**/*.log'
             )
         }
