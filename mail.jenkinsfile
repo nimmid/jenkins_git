@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    environment {
+        RECIPIENT = 'ndubey202000@gmail.com'
+        LOG_DIR = "${env.WORKSPACE}/logs"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building...'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    try {
+                        echo 'Running tests...'
+                        sh '''
+                            mkdir -p ${LOG_DIR}
+                            echo "Test logs..." > ${LOG_DIR}/test.log
+                            # Run your actual tests here and redirect output to test.log
+                        '''
+                        currentBuild.description = "Tests succeeded"
+                    } catch (err) {
+                        currentBuild.result = 'FAILURE'
+                        currentBuild.description = "Tests failed"
+                        throw err
+                    }
+                }
+            }
+            post {
+                always {
+                    emailext (
+                        subject: "Test Stage: ${currentBuild.currentResult}",
+                        body: "Test stage completed with status: ${currentBuild.currentResult}",
+                        to: "${RECIPIENT}",
+                        attachmentsPattern: 'logs/test.log'
+                    )
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                script {
+                    try {
+                        echo 'Running security scan...'
+                        sh '''
+                            mkdir -p ${LOG_DIR}
+                            echo "Security scan logs..." > ${LOG_DIR}/scan.log
+                            # Run your actual security scan here
+                        '''
+                        currentBuild.description = "Scan succeeded"
+                    } catch (err) {
+                        currentBuild.result = 'FAILURE'
+                        currentBuild.description = "Scan failed"
+                        throw err
+                    }
+                }
+            }
+            post {
+                always {
+                    emailext (
+                        subject: "Security Scan Stage: ${currentBuild.currentResult}",
+                        body: "Security scan stage completed with status: ${currentBuild.currentResult}",
+                        to: "${RECIPIENT}",
+                        attachmentsPattern: 'logs/scan.log'
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed.'
+        }
+    }
+}
