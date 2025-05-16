@@ -2,99 +2,50 @@ pipeline {
     agent any
 
     environment {
-        RECIPIENT = 'ndubey202000@gmail.com'
-        LOG_DIR = "${env.WORKSPACE}/logs"
-    }
-
-    options {
-        timestamps()
+        EMAIL_RECIPIENT = 'ndubey202000@gmail.com'
     }
 
     stages {
-        stage('Build') {
-            steps {
-                echo 'Build stage: compiling code (simulated)...'
-            }
-        }
-
         stage('Test') {
             steps {
-                script {
-                    try {
-                        echo 'Running tests...'
-                        sh '''
-                            mkdir -p ${LOG_DIR}
-                            echo "=== Test Stage Console Output ===" > ${LOG_DIR}/test.log
-
-                            # Simulated test process
-                            echo "Initializing test framework..." | tee -a ${LOG_DIR}/test.log
-                            sleep 1
-                            echo "Running test case 1..." | tee -a ${LOG_DIR}/test.log
-                            echo "Test case 1 passed." | tee -a ${LOG_DIR}/test.log
-                            echo "Running test case 2..." | tee -a ${LOG_DIR}/test.log
-                            echo "Test case 2 passed." | tee -a ${LOG_DIR}/test.log
-                            echo "All tests completed successfully." | tee -a ${LOG_DIR}/test.log
-                        '''
-                    } catch (err) {
-                        currentBuild.result = 'FAILURE'
-                        throw err
-                    }
-                }
-            }
-            post {
-                always {
-                    emailext(
-                        subject: "Test Stage Result: ${currentBuild.currentResult}",
-                        body: """<p>The <strong>Test</strong> stage has completed with status: <strong>${currentBuild.currentResult}</strong>.</p>
-                                 <p>Console log is attached for details.</p>""",
-                        mimeType: 'text/html',
-                        to: "${RECIPIENT}",
-                        attachmentsPattern: 'logs/test.log'
-                    )
-                }
+                echo "Running tests..."
+                sh './run-tests.sh'
             }
         }
 
         stage('Security Scan') {
             steps {
-                script {
-                    try {
-                        echo 'Running security scan...'
-                        sh '''
-                            mkdir -p ${LOG_DIR}
-                            echo "=== Security Scan Console Output ===" > ${LOG_DIR}/scan.log
-
-                            # Simulated security scan process
-                            echo "Starting vulnerability scan..." | tee -a ${LOG_DIR}/scan.log
-                            sleep 1
-                            echo "Scanning dependencies..." | tee -a ${LOG_DIR}/scan.log
-                            echo "No critical vulnerabilities found." | tee -a ${LOG_DIR}/scan.log
-                            echo "Security scan completed." | tee -a ${LOG_DIR}/scan.log
-                        '''
-                    } catch (err) {
-                        currentBuild.result = 'FAILURE'
-                        throw err
-                    }
-                }
-            }
-            post {
-                always {
-                    emailext(
-                        subject: "Security Scan Stage Result: ${currentBuild.currentResult}",
-                        body: """<p>The <strong>Security Scan</strong> stage has completed with status: <strong>${currentBuild.currentResult}</strong>.</p>
-                                 <p>Console log is attached for details.</p>""",
-                        mimeType: 'text/html',
-                        to: "${RECIPIENT}",
-                        attachmentsPattern: 'logs/scan.log'
-                    )
-                }
+                echo "Running security scan..."
+                sh './run-security-scan.sh'
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline complete.'
+            // Capture full console log to file
+            script {
+                def consoleLogFile = "${env.WORKSPACE}/console.log"
+                def consoleOutput = currentBuild.rawBuild.getLog(10000).join("\n")
+                writeFile file: 'console.log', text: consoleOutput
+            }
+
+            // Send Email with Console Log attached
+            emailext (
+                subject: "Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: """
+                Hello Team,
+
+                The build has completed with status: ${currentBuild.currentResult}.
+
+                Please find the console logs attached.
+
+                Regards,
+                Jenkins
+                """,
+                to: "${EMAIL_RECIPIENT}",
+                attachmentsPattern: 'console.log'
+            )
         }
     }
 }
