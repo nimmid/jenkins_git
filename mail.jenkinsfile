@@ -6,10 +6,14 @@ pipeline {
         LOG_DIR = "${env.WORKSPACE}/logs"
     }
 
+    options {
+        timestamps()
+    }
+
     stages {
         stage('Build') {
             steps {
-                echo 'Building...'
+                echo 'Build stage: compiling code (simulated)...'
             }
         }
 
@@ -20,22 +24,30 @@ pipeline {
                         echo 'Running tests...'
                         sh '''
                             mkdir -p ${LOG_DIR}
-                            echo "Test logs..." > ${LOG_DIR}/test.log
-                            # Run your actual tests here and redirect output to test.log
+                            echo "=== Test Stage Console Output ===" > ${LOG_DIR}/test.log
+
+                            # Simulated test process
+                            echo "Initializing test framework..." | tee -a ${LOG_DIR}/test.log
+                            sleep 1
+                            echo "Running test case 1..." | tee -a ${LOG_DIR}/test.log
+                            echo "Test case 1 passed." | tee -a ${LOG_DIR}/test.log
+                            echo "Running test case 2..." | tee -a ${LOG_DIR}/test.log
+                            echo "Test case 2 passed." | tee -a ${LOG_DIR}/test.log
+                            echo "All tests completed successfully." | tee -a ${LOG_DIR}/test.log
                         '''
-                        currentBuild.description = "Tests succeeded"
                     } catch (err) {
                         currentBuild.result = 'FAILURE'
-                        currentBuild.description = "Tests failed"
                         throw err
                     }
                 }
             }
             post {
                 always {
-                    emailext (
-                        subject: "Test Stage: ${currentBuild.currentResult}",
-                        body: "Test stage completed with status: ${currentBuild.currentResult}",
+                    emailext(
+                        subject: "Test Stage Result: ${currentBuild.currentResult}",
+                        body: """<p>The <strong>Test</strong> stage has completed with status: <strong>${currentBuild.currentResult}</strong>.</p>
+                                 <p>Console log is attached for details.</p>""",
+                        mimeType: 'text/html',
                         to: "${RECIPIENT}",
                         attachmentsPattern: 'logs/test.log'
                     )
@@ -50,22 +62,28 @@ pipeline {
                         echo 'Running security scan...'
                         sh '''
                             mkdir -p ${LOG_DIR}
-                            echo "Security scan logs..." > ${LOG_DIR}/scan.log
-                            # Run your actual security scan here
+                            echo "=== Security Scan Console Output ===" > ${LOG_DIR}/scan.log
+
+                            # Simulated security scan process
+                            echo "Starting vulnerability scan..." | tee -a ${LOG_DIR}/scan.log
+                            sleep 1
+                            echo "Scanning dependencies..." | tee -a ${LOG_DIR}/scan.log
+                            echo "No critical vulnerabilities found." | tee -a ${LOG_DIR}/scan.log
+                            echo "Security scan completed." | tee -a ${LOG_DIR}/scan.log
                         '''
-                        currentBuild.description = "Scan succeeded"
                     } catch (err) {
                         currentBuild.result = 'FAILURE'
-                        currentBuild.description = "Scan failed"
                         throw err
                     }
                 }
             }
             post {
                 always {
-                    emailext (
-                        subject: "Security Scan Stage: ${currentBuild.currentResult}",
-                        body: "Security scan stage completed with status: ${currentBuild.currentResult}",
+                    emailext(
+                        subject: "Security Scan Stage Result: ${currentBuild.currentResult}",
+                        body: """<p>The <strong>Security Scan</strong> stage has completed with status: <strong>${currentBuild.currentResult}</strong>.</p>
+                                 <p>Console log is attached for details.</p>""",
+                        mimeType: 'text/html',
                         to: "${RECIPIENT}",
                         attachmentsPattern: 'logs/scan.log'
                     )
@@ -76,7 +94,7 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline completed.'
+            echo 'Pipeline complete.'
         }
     }
 }
