@@ -1,5 +1,5 @@
 environment {
-    EMAIL_RECIPIENT = 'team@example.com'
+    EMAIL_RECIPIENT = 'nimmid6@gmail.com'
     LOG_FILE = 'console_output.log'
 }
 
@@ -26,7 +26,7 @@ stages {
 post {
     always {
         script {
-            // Capture console output and write to file
+            // Capture console output to file
             def logText = currentBuild.rawBuild.getLog(10000).join("\n")
             writeFile file: "${LOG_FILE}", text: logText
         }
