@@ -1,51 +1,37 @@
-pipeline {
-    agent any
+environment {
+    EMAIL_RECIPIENT = 'team@example.com'
+    LOG_FILE = 'console_output.log'
+}
 
-    environment {
-        EMAIL_RECIPIENT = 'ndubey202000@gmail.com'
-    }
-
-    stages {
-        stage('Test') {
-            steps {
-                echo "Running tests..."
-                sh './run-tests.sh'
-            }
-        }
-
-        stage('Security Scan') {
-            steps {
-                echo "Running security scan..."
-                sh './run-security-scan.sh'
-            }
-        }
-    }
-
-    post {
-        always {
-            // Capture full console log to file
+stages {
+    stage('Test') {
+        steps {
             script {
-                def consoleLogFile = "${env.WORKSPACE}/console.log"
-                def consoleOutput = currentBuild.rawBuild.getLog(10000).join("\n")
-                writeFile file: 'console.log', text: consoleOutput
+                echo 'Running test stage...'
+                sh 'echo "Simulating test run..." > test-output.txt'
             }
+        }
+    }
 
-            // Send Email with Console Log attached
-            emailext (
-                subject: "Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: """
-                Hello Team,
-
-                The build has completed with status: ${currentBuild.currentResult}.
-
-                Please find the console logs attached.
-
-                Regards,
-                Jenkins
-                """,
-                to: "${EMAIL_RECIPIENT}",
-                attachmentsPattern: 'console.log'
-            )
+    stage('Security Scan') {
+        steps {
+            script {
+                echo 'Running security scan stage...'
+                sh 'echo "Simulating security scan..." > security-output.txt'
+            }
         }
     }
 }
+
+post {
+    always {
+        script {
+            // Capture console output and write to file
+            def logText = currentBuild.rawBuild.getLog(10000).join("\n")
+            writeFile file: "${LOG_FILE}", text: logText
+        }
+
+        emailext(
+            to: "${EMAIL_RECIPIENT}",
+            subject: "Jenkins Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+            body: """Hello,
