@@ -1,0 +1,95 @@
+pipeline {
+    agent any
+
+    environment {
+        DIRECTORY_PATH = "C:\\Users\\jenkins\\workspace\\project-directory"
+        TESTING_ENVIRONMENT = "nextjs-app-testing-environment"
+        PRODUCTION_ENVIRONMENT = "nextjs-app-production-environment"
+        JENKINS_LOG_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\project-pipeline\\builds\\${BUILD_NUMBER}\\log"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo "Build Stage"
+                dir("${env.DIRECTORY_PATH}") {
+                    bat 'npm install'
+                    bat 'npm run build'
+                }
+            }
+        }
+
+        stage('Unit and Integration Tests') {
+            steps {
+                echo "Testing Stage"
+                dir("${env.DIRECTORY_PATH}") {
+                    bat 'npm run test'
+                }
+            }
+        }
+
+        stage('Code Analysis') {
+            steps {
+                echo "Code Analysis Stage"
+                dir("${env.DIRECTORY_PATH}") {
+                    bat 'sonar-scanner -Dsonar.projectKey=NextApp -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.login=your_sonar_token'
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                echo "Security Scan Stage"
+                dir("${env.DIRECTORY_PATH}") {
+                    bat 'dependency-check.bat --project NextApp --scan . --format ALL'
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                echo "Deploying to staging environment..."
+                bat 'echo Deploying to staging server...'
+                // Add your actual deployment commands here
+            }
+        }
+
+        stage('Integration Tests on Staging') {
+            steps {
+                echo "Running integration tests on staging..."
+                bat 'curl http://staging-server-url/health || exit /b 1'
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                input message: 'Approve production deployment?', ok: 'Deploy'
+                echo "Deploying to production environment..."
+                bat 'echo Deploying to production server...'
+                // Add your actual production deployment commands here
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline Completed.'
+        }
+        success {
+            emailext(
+                body: 'Pipeline succeeded. All stages completed.',
+                subject: 'Pipeline Status: SUCCESS',
+                to: 'devops-team@example.com',
+                attachmentsPattern: '**/*.log'
+            )
+        }
+        failure {
+            emailext(
+                body: 'Pipeline failed. Please check the logs for details.',
+                subject: 'Pipeline Status: FAILURE',
+                to: 'devops-team@example.com',
+                attachmentsPattern: '**/*.log'
+            )
+        }
+    }
+}
